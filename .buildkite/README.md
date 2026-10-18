@@ -1,10 +1,10 @@
 # Protected Janus SDK CI preparation
 
-This is additive ordinary CI preparation. Automatic main pushes and pull requests
-against main remain enabled with their original trusted runner labels. Public
-fork pull requests and manual dispatch use read-only hosted Ubuntu; checkout does
-not persist credentials. Keep automatic Actions until the native pipeline has
-been commissioned and verified.
+This is additive ordinary CI preparation. Automatic main pushes, pull requests
+against main and manual dispatch use read-only hosted Ubuntu while native
+commissioning completes; the retired self-hosted Actions labels leave jobs queued.
+Checkout does not persist credentials. Keep automatic Actions until the native
+pipeline has been commissioned and verified.
 
 The reference pipeline calls `janus-ci bootstrap` on queue `janus-linux`. The
 protected image-owned `caldotcom-api-v2-sdk-ci` policy must select job
