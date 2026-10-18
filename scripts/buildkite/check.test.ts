@@ -53,13 +53,19 @@ if stage=='run build':
 signal.signal(signal.SIGTERM,signal.SIG_IGN)
 signal.signal(signal.SIGINT,signal.SIG_IGN)
 p=pathlib.Path(sys.argv[1])
+time.sleep(float(sys.argv[2]))
 while True:
  p.write_text(str(time.time_ns()))
  time.sleep(.02)
 """
-  child=subprocess.Popen([sys.executable,'-I','-c',code,str(root/'heartbeat')])
+  child=subprocess.Popen([sys.executable,'-I','-c',code,str(root/'heartbeat'),options.get('TEST_CHILD_DELAY','0')])
   pending=root/'ready.tmp';pending.write_text(json.dumps({'pid':os.getpid(),'pgid':os.getpgrp(),'child':child.pid}));pending.replace(root/'ready.json')
-  if options['TEST_WAIT']=='failure':sys.exit(23)
+  if options['TEST_WAIT']=='failure':
+   deadline=time.monotonic()+5
+   while not (root/'heartbeat').exists():
+    if child.poll() is not None or time.monotonic()>=deadline:sys.exit('Descendant failed to become ready')
+    time.sleep(.01)
+   sys.exit(23)
   while True:time.sleep(.05)
  output=root/'packages/sdk/dist';kind=options.get('TEST_DIST','valid')
  if kind=='absent':pass
@@ -192,7 +198,8 @@ describe("protected SDK CI wrapper", () => {
   });
 
   it.each(["SIGTERM", "SIGINT", "failure"])("stops owned descendants and cleans private state on %s", async (kind) => {
-    const f = fixture({ TEST_WAIT: kind === "failure" ? "failure" : "wait" });
+    // Exceed the wrapper's three-second cleanup grace to expose premature mock failure.
+    const f = fixture({ TEST_WAIT: kind === "failure" ? "failure" : "wait", TEST_CHILD_DELAY: kind === "failure" ? "3.5" : "0" });
     const child = spawn("/bin/bash", [f.script, "build-and-test"], { cwd: f.root, env: f.env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
     let closed = false;
     let code: number | null = null;
